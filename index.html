@@ -748,6 +748,13 @@
     let animacionActiva = false;
     let procesandoFrame = false;
     let ultimaImagenCanvas = null;
+    let promesaInferenciaActual = Promise.resolve();
+
+    function ejecutarConLock(fn) {
+      const siguiente = promesaInferenciaActual.then(fn, fn);
+      promesaInferenciaActual = siguiente.catch(() => {});
+      return siguiente;
+    }
 
     // Referencias DOM
     const collagePlane = document.getElementById("collagePlane");
@@ -875,21 +882,22 @@
       return inter / (a.w * a.h + b.w * b.h - inter + 1e-6);
     }
 
-    async function detectarRostrosYuNet(sourceCanvas, scoreThresh = 0.55) {
+    async function detectarRostrosYuNet(sourceCanvas, scoreThresh = 0.5) {
       const origW = sourceCanvas.width;
       const origH = sourceCanvas.height;
-      const maxDim = 480;
-      const scale = Math.min(1.0, maxDim / Math.max(origW, origH));
+
+      // El modelo ONNX YuNet tiene entrada fija [1, 3, 640, 640]
+      const wp = 640;
+      const hp = 640;
+      const scale = Math.min(wp / origW, hp / origH);
       const wScaled = Math.round(origW * scale);
       const hScaled = Math.round(origH * scale);
-      const wp = Math.ceil(wScaled / 32) * 32;
-      const hp = Math.ceil(hScaled / 32) * 32;
 
       const tmpCanvas = document.createElement("canvas");
       tmpCanvas.width = wp;
       tmpCanvas.height = hp;
       const tCtx = tmpCanvas.getContext("2d");
-      tCtx.fillStyle = "#000";
+      tCtx.fillStyle = "#000000";
       tCtx.fillRect(0, 0, wp, hp);
       tCtx.drawImage(sourceCanvas, 0, 0, wScaled, hScaled);
 
@@ -898,9 +906,9 @@
       const floatBGR = new Float32Array(3 * numPix);
 
       for (let i = 0; i < numPix; i++) {
-        floatBGR[i] = imgData[4 * i + 2];
-        floatBGR[numPix + i] = imgData[4 * i + 1];
-        floatBGR[2 * numPix + i] = imgData[4 * i];
+        floatBGR[i] = imgData[4 * i + 2];            // B
+        floatBGR[numPix + i] = imgData[4 * i + 1];   // G
+        floatBGR[2 * numPix + i] = imgData[4 * i];   // R
       }
 
       const inputName = sesionYuNet.inputNames[0];
@@ -1168,7 +1176,47 @@
       }
     }
 
-    // 6. Cargar foto y mostrar vista previa lista para el botón "¡Comprobar Imagen!"
+    function rotarCanvas90(srcCanvas, grados) {
+      const c = document.createElement("canvas");
+      const ctx = c.getContext("2d");
+      if (grados === 90) {
+        c.width = srcCanvas.height;
+        c.height = srcCanvas.width;
+        ctx.translate(c.width, 0);
+        ctx.rotate(Math.PI / 2);
+      } else if (grados === 270) {
+        c.width = srcCanvas.height;
+        c.height = srcCanvas.width;
+        ctx.translate(0, c.height);
+        ctx.rotate(-Math.PI / 2);
+      } else if (grados === 180) {
+        c.width = srcCanvas.width;
+        c.height = srcCanvas.height;
+        ctx.translate(c.width, c.height);
+        ctx.rotate(Math.PI);
+      } else {
+        return srcCanvas;
+      }
+      ctx.drawImage(srcCanvas, 0, 0);
+      return c;
+    }
+
+    async function detectarConRotacion(imgCanvas) {
+      let caras = await detectarRostrosYuNet(imgCanvas, 0.45);
+      if (caras.length > 0) return { canvas: imgCanvas, caras };
+
+      for (const angulo of [90, 270, 180]) {
+        const cRot = rotarCanvas90(imgCanvas, angulo);
+        caras = await detectarRostrosYuNet(cRot, 0.45);
+        if (caras.length > 0) return { canvas: cRot, caras };
+      }
+
+      // Último intento con umbral más sensible
+      caras = await detectarRostrosYuNet(imgCanvas, 0.3);
+      return { canvas: imgCanvas, caras };
+    }
+
+    // 6. Cargar foto y comprobar
     btnSubir.addEventListener("click", () => {
       inputArchivo.click();
     });
@@ -1179,7 +1227,7 @@
       detenerCamara();
 
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         const maxDim = 960;
         const scale = Math.min(1.0, maxDim / Math.max(img.width, img.height));
         const c = document.createElement("canvas");
@@ -1194,25 +1242,19 @@
         canvasSalida.height = c.height;
         ctxSalida.drawImage(c, 0, 0);
 
-        // Habilitar y resaltar el botón "¡Comprobar Imagen!"
         btnComprobar.disabled = false;
         btnComprobar.innerHTML = "🔍 ¡Comprobar Imagen! (¿Onta Bebé?)";
 
-        cardResultado.className = "result-box-3d";
-        avatarResultado.style.display = "none";
-        badgeAquita.textContent = "📸 FOTO CARGADA";
-        lblIdentidad.textContent = "¡Foto lista! 👇";
-        lblIdentidad.style.color = "#38bdf8";
-        lblDetalle.textContent = "Presiona el botón grande «🔍 ¡Comprobar Imagen!» debajo de la foto para analizarla.";
+        // Ejecutar comprobación automáticamente al cargar y permitir re-comprobar con el botón
+        await ejecutarComprobacionImagen(c, true);
       };
       img.src = URL.createObjectURL(file);
       inputArchivo.value = "";
     });
 
-    // Acción del botón "¡Comprobar Imagen!"
+    // Acción del botón "¡Comprobar Imagen!" / "¡Capturar y Comprobar!"
     btnComprobar.addEventListener("click", async () => {
       if (animacionActiva && videoCamara.readyState >= 2) {
-        // Si la cámara está encendida, congela el frame actual y lo comprueba
         const vw = videoCamara.videoWidth;
         const vh = videoCamara.videoHeight;
         const c = document.createElement("canvas");
@@ -1231,43 +1273,69 @@
         ctxSalida.drawImage(c, 0, 0);
       }
 
-      if (!ultimaImagenCanvas) return;
+      if (!ultimaImagenCanvas) {
+        inputArchivo.click();
+        return;
+      }
       await ejecutarComprobacionImagen(ultimaImagenCanvas, true);
     });
 
     async function ejecutarComprobacionImagen(imgCanvas, conEfectoLaser = true) {
+      if (!sesionYuNet || !sesionSFace || !datosEmbeddings) {
+        alert("El modelo aún está terminando de cargar, espera 2 segundos e inténtalo de nuevo.");
+        return;
+      }
+
       btnComprobar.disabled = true;
       btnComprobar.innerHTML = "⏳ Buscando al bebé...";
+      badgeAquita.textContent = "🔍 ANALIZANDO ROSTRO...";
+      lblIdentidad.textContent = "Escaneando carita... 👀";
+      lblIdentidad.style.color = "#38bdf8";
+
       if (conEfectoLaser) {
         laserScanner.style.display = "block";
-        await new Promise(r => setTimeout(r, 450));
+        await new Promise(r => setTimeout(r, 400));
       }
 
       try {
-        ctxSalida.drawImage(imgCanvas, 0, 0);
-        const caras = await detectarRostrosYuNet(imgCanvas);
+        await ejecutarConLock(async () => {
+          const { canvas: canvasOrientado, caras } = await detectarConRotacion(imgCanvas);
+          ultimaImagenCanvas = canvasOrientado;
+          canvasSalida.width = canvasOrientado.width;
+          canvasSalida.height = canvasOrientado.height;
+          ctxSalida.drawImage(canvasOrientado, 0, 0);
 
-        if (caras.length === 0) {
-          actualizarPanelAquita(null);
-          return;
-        }
+          if (caras.length === 0) {
+            actualizarPanelAquita(null);
+            return;
+          }
 
-        caras.sort((a, b) => (b.w * b.h) - (a.w * a.h));
-        const detecciones = [];
+          caras.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+          const detecciones = [];
 
-        for (const cara of caras) {
-          const emb = await extraerEmbeddingSFace(imgCanvas, cara.kps);
-          const resultado = clasificarEmbedding(emb);
-          detecciones.push({ cara, resultado });
-        }
+          for (const cara of caras) {
+            const emb = await extraerEmbeddingSFace(canvasOrientado, cara.kps);
+            const resultado = clasificarEmbedding(emb);
+            detecciones.push({ cara, resultado });
+          }
 
-        ctxSalida.drawImage(imgCanvas, 0, 0);
-        dibujarDetecciones(ctxSalida, detecciones);
-        actualizarPanelAquita(detecciones[0].resultado);
+          ctxSalida.drawImage(canvasOrientado, 0, 0);
+          dibujarDetecciones(ctxSalida, detecciones);
+          actualizarPanelAquita(detecciones[0].resultado);
+
+          if (conEfectoLaser && window.innerWidth <= 880) {
+            cardResultado.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        });
+      } catch (err) {
+        console.error("Error comprobando imagen:", err);
+        badgeAquita.textContent = "⚠️ ERROR EN ANÁLISIS";
+        lblIdentidad.textContent = "Intenta con otra foto";
+        lblDetalle.textContent = "Detalle técnico: " + err.message;
       } finally {
         laserScanner.style.display = "none";
         btnComprobar.disabled = false;
-        btnComprobar.innerHTML = "🔍 ¡Volver a Comprobar Imagen!";
+        btnComprobar.innerHTML = "🔍 ¡Comprobar Imagen! (¿Onta Bebé?)";
       }
     }
 
@@ -1361,9 +1429,10 @@
           }
           sCtx.drawImage(videoCamara, 0, 0, vw, vh);
 
-          (async () => {
+          ejecutarConLock(async () => {
             try {
-              const caras = await detectarRostrosYuNet(snap);
+              if (!animacionActiva) return;
+              const caras = await detectarRostrosYuNet(snap, 0.5);
               caras.sort((a, b) => (b.w * b.h) - (a.w * a.h));
               const nuevas = [];
               for (const cara of caras.slice(0, 2)) {
@@ -1380,7 +1449,7 @@
             } finally {
               procesandoFrame = false;
             }
-          })();
+          });
         }
       }
 
