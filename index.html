@@ -3,161 +3,400 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Reconocimiento Facial — ANTHONY | CESIA | ELVIS | THOMAS</title>
+  <title>¿Onta Bebé? 🙈✨ — Detector Oficial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --card: #1e293b;
-      --border: #334155;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
-      --success: #22c55e;
-      --danger: #ef4444;
-      --warning: #f59e0b;
+      --bg-dark: #070913;
+      --glass-bg: rgba(17, 24, 39, 0.82);
+      --glass-border: rgba(255, 255, 255, 0.16);
+      --text: #ffffff;
+      --muted: #cbd5e1;
+      --accent-pink: #ec4899;
+      --accent-purple: #8b5cf6;
+      --accent-cyan: #06b6d4;
+      --accent-gold: #f59e0b;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     body {
-      background-color: var(--bg);
+      background-color: var(--bg-dark);
       color: var(--text);
       min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
       display: flex;
       flex-direction: column;
     }
 
-    header {
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 18px;
+    /* =========================================================
+       FONDO 3D CON COLLAGE ANIMADO DE LAS FOTOS DE ENTRENAMIENTO
+       ========================================================= */
+    .bg-3d-scene {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      perspective: 950px;
+      background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #090d16 70%, #030712 100%);
+    }
+
+    .collage-plane {
+      position: absolute;
+      top: -25%;
+      left: -20%;
+      width: 140%;
+      height: 150%;
+      transform-style: preserve-3d;
+      transform: rotateX(22deg) rotateY(-8deg) rotateZ(-10deg) translateZ(-60px);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      opacity: 0.42;
+      filter: saturate(1.15) contrast(1.05);
+      pointer-events: none;
+    }
+
+    .collage-row {
+      display: flex;
+      gap: 18px;
+      width: max-content;
+      animation: marqueeLeft 42s linear infinite;
+    }
+
+    .collage-row:nth-child(even) {
+      animation: marqueeRight 46s linear infinite;
+    }
+
+    @keyframes marqueeLeft {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    @keyframes marqueeRight {
+      0% { transform: translateX(-50%); }
+      100% { transform: translateX(0); }
+    }
+
+    .polaroid-3d {
+      width: 135px;
+      height: 155px;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 14px;
+      padding: 8px 8px 26px 8px;
+      box-shadow:
+        0 14px 28px rgba(0, 0, 0, 0.65),
+        0 0 15px rgba(139, 92, 246, 0.25);
+      position: relative;
+      flex-shrink: 0;
+      transform: translateZ(10px);
+    }
+
+    .polaroid-3d img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+      display: block;
+    }
+
+    .polaroid-3d span {
+      position: absolute;
+      bottom: 5px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: 0.04em;
+    }
+
+    .bg-vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background:
+        radial-gradient(circle at center, rgba(7, 9, 19, 0.35) 0%, rgba(7, 9, 19, 0.82) 85%),
+        linear-gradient(180deg, rgba(7, 9, 19, 0.75) 0%, rgba(7, 9, 19, 0.35) 50%, rgba(7, 9, 19, 0.9) 100%);
+      pointer-events: none;
+    }
+
+    /* =========================================================
+       CONTENIDO PRINCIPAL EN 3D GLASSMORPHISM
+       ========================================================= */
+    .app-wrapper {
+      position: relative;
+      z-index: 2;
+      max-width: 1140px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      flex: 1;
+    }
+
+    header.hero-header {
+      background: var(--glass-bg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 18px 24px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 14px;
+      box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+        0 6px 0 rgba(139, 92, 246, 0.35);
+      transform: perspective(1000px) translateZ(0);
     }
 
-    .brand h1 {
-      font-size: 1.15rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-
-    .brand p {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    .status-badge {
-      display: inline-flex;
+    .title-group {
+      display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 0.78rem;
-      padding: 5px 11px;
-      border-radius: 999px;
-      background: rgba(245, 158, 11, 0.15);
-      color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.3);
+      gap: 14px;
+    }
+
+    .logo-3d {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #ec4899, #8b5cf6, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      box-shadow:
+        0 8px 0 #4c1d95,
+        0 12px 24px rgba(236, 72, 153, 0.45);
+      animation: bounceLogo 3s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes bounceLogo {
+      0%, 100% { transform: translateY(0) rotate(-3deg); }
+      50% { transform: translateY(-6px) rotate(4deg); }
+    }
+
+    .title-text h1 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(1.75rem, 4vw, 2.4rem);
+      font-weight: 700;
+      background: linear-gradient(90deg, #fff 0%, #f472b6 45%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 18px rgba(236, 72, 153, 0.35);
+      line-height: 1.1;
+    }
+
+    .title-text p {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-top: 4px;
       font-weight: 600;
     }
 
-    .status-badge.ready {
-      background: rgba(34, 197, 94, 0.15);
-      color: #4ade80;
-      border-color: rgba(34, 197, 94, 0.3);
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.84rem;
+      padding: 8px 16px;
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.2);
+      color: #fde68a;
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
 
-    main {
-      flex: 1;
-      max-width: 1120px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 16px;
+    .status-pill.ready {
+      background: rgba(16, 185, 129, 0.22);
+      color: #6ee7b7;
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    /* GRID PRINCIPAL */
+    .main-grid {
       display: grid;
-      grid-template-columns: 1fr 360px;
-      gap: 16px;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+      align-items: start;
     }
 
-    @media (max-width: 860px) {
-      main {
+    @media (max-width: 880px) {
+      .main-grid {
         grid-template-columns: 1fr;
-        padding: 12px;
       }
     }
 
-    .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
+    .card-3d {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 26px;
+      padding: 20px;
+      box-shadow:
+        0 24px 48px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+        0 8px 0 rgba(30, 41, 59, 0.95);
       display: flex;
       flex-direction: column;
+      gap: 16px;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
 
-    .controls-bar {
+    /* BOTONES 3D TÁCTILES */
+    .toolbar-3d {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      padding: 12px;
-      border-bottom: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.5);
+      gap: 12px;
     }
 
-    .btn {
+    .btn-3d {
       flex: 1;
-      min-width: 125px;
+      min-width: 140px;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 13px 16px;
+      border-radius: 16px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: #ffffff;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: 1px solid transparent;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      color: #fff;
-      background: var(--primary);
-      text-align: center;
-    }
-
-    .btn:hover:not(:disabled) {
-      background: var(--primary-hover);
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn.secondary {
-      background: #334155;
-      color: #e2e8f0;
-    }
-
-    .btn.secondary:hover:not(:disabled) {
-      background: #475569;
-    }
-
-    .btn.danger {
-      background: #dc2626;
-    }
-
-    .viewport {
+      gap: 8px;
       position: relative;
-      flex: 1;
-      min-height: 340px;
-      background: #090d16;
+      transform: translateY(0);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.15s ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-3d:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: translateY(2px) !important;
+    }
+
+    .btn-3d.purple {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+      box-shadow: 0 6px 0 #4c1d95, 0 10px 20px rgba(139, 92, 246, 0.4);
+    }
+    .btn-3d.purple:active:not(:disabled) {
+      transform: translateY(5px);
+      box-shadow: 0 1px 0 #4c1d95, 0 4px 10px rgba(139, 92, 246, 0.3);
+    }
+
+    .btn-3d.cyan {
+      background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+      box-shadow: 0 6px 0 #0369a1, 0 10px 20px rgba(6, 182, 212, 0.4);
+    }
+    .btn-3d.cyan:active:not(:disabled) {
+      transform: translateY(5px);
+      box-shadow: 0 1px 0 #0369a1, 0 4px 10px rgba(6, 182, 212, 0.3);
+    }
+
+    .btn-3d.pink {
+      background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+      box-shadow: 0 6px 0 #831843, 0 10px 20px rgba(236, 72, 153, 0.4);
+    }
+    .btn-3d.pink:active:not(:disabled) {
+      transform: translateY(5px);
+      box-shadow: 0 1px 0 #831843, 0 4px 10px rgba(236, 72, 153, 0.3);
+    }
+
+    .btn-3d.danger {
+      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+      box-shadow: 0 6px 0 #7f1d1d, 0 10px 20px rgba(239, 68, 68, 0.4);
+    }
+
+    /* SÚPER BOTÓN "¡COMPROBAR IMAGEN!" */
+    .btn-comprobar-3d {
+      width: 100%;
+      padding: 16px 22px;
+      border-radius: 18px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      background: linear-gradient(135deg, #f59e0b 0%, #ec4899 55%, #8b5cf6 100%);
+      background-size: 200% 200%;
+      animation: gradientPulse 3s ease infinite;
+      color: #ffffff;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.22rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow:
+        0 8px 0 #9d174d,
+        0 14px 30px rgba(236, 72, 153, 0.55);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.2s;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+    }
+
+    .btn-comprobar-3d:hover:not(:disabled) {
+      filter: brightness(1.08);
+      transform: translateY(-2px);
+      box-shadow:
+        0 10px 0 #9d174d,
+        0 18px 36px rgba(236, 72, 153, 0.65);
+    }
+
+    .btn-comprobar-3d:active:not(:disabled) {
+      transform: translateY(6px);
+      box-shadow:
+        0 2px 0 #9d174d,
+        0 6px 14px rgba(236, 72, 153, 0.4);
+    }
+
+    .btn-comprobar-3d:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      animation: none;
+      background: #334155;
+      box-shadow: 0 5px 0 #1e293b;
+      border-color: transparent;
+    }
+
+    @keyframes gradientPulse {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* VISOR DE CÁMARA / FOTO CON LÁSER DE ESCANEO */
+    .stage-3d {
+      position: relative;
+      min-height: 360px;
+      border-radius: 20px;
+      background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%);
+      border: 2px solid rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 10px 25px rgba(0, 0, 0, 0.7);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -170,89 +409,196 @@
 
     #canvasSalida {
       max-width: 100%;
-      max-height: 62vh;
+      max-height: 58vh;
       width: auto;
       height: auto;
-      display: block;
+      display: none;
+      border-radius: 14px;
     }
 
-    .placeholder-msg {
-      padding: 32px 20px;
+    .laser-scanner {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, transparent, #38bdf8, #ec4899, #38bdf8, transparent);
+      box-shadow: 0 0 22px 6px rgba(236, 72, 153, 0.85);
+      display: none;
+      z-index: 10;
+      animation: scanVertical 0.85s ease-in-out infinite alternate;
+    }
+
+    @keyframes scanVertical {
+      0% { top: 4%; }
+      100% { top: 94%; }
+    }
+
+    .empty-stage {
+      padding: 28px 20px;
       text-align: center;
-      color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-
-    .results-body {
-      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      align-items: center;
+      gap: 12px;
     }
 
-    .section-label {
-      font-size: 0.75rem;
+    .empty-stage .big-emoji {
+      font-size: 3.4rem;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5));
+      animation: peekaboo 2.4s ease-in-out infinite;
+    }
+
+    @keyframes peekaboo {
+      0%, 100% { transform: scale(1) rotate(-4deg); }
+      50% { transform: scale(1.12) rotate(5deg); }
+    }
+
+    .empty-stage h3 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.35rem;
+      color: #f8fafc;
+    }
+
+    .empty-stage p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      max-width: 340px;
+      line-height: 1.45;
+    }
+
+    /* PANEL DERECHO: "¡AQUÍ TA!" */
+    .aquita-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .aquita-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fde047;
+      text-shadow: 0 3px 12px rgba(250, 204, 21, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .result-box-3d {
+      background: rgba(15, 23, 42, 0.85);
+      border: 2px solid rgba(255, 255, 255, 0.14);
+      border-radius: 22px;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .result-box-3d.found {
+      border-color: #10b981;
+      background: linear-gradient(145deg, rgba(6, 78, 59, 0.65), rgba(15, 23, 42, 0.9));
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.35), 0 12px 24px rgba(0,0,0,0.5);
+      transform: scale(1.02);
+    }
+
+    .result-box-3d.unknown {
+      border-color: #ef4444;
+      background: linear-gradient(145deg, rgba(127, 29, 29, 0.65), rgba(15, 23, 42, 0.9));
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.35), 0 12px 24px rgba(0,0,0,0.5);
+    }
+
+    .avatar-preview {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      margin: 0 auto 10px;
+      border: 3px solid #fde047;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      object-fit: cover;
+      display: none;
+    }
+
+    .aquita-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 0.82rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--muted);
+      letter-spacing: 0.06em;
+      background: rgba(255, 255, 255, 0.12);
+      color: #fde047;
+      margin-bottom: 6px;
     }
 
-    .identity-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      transition: border-color 0.2s;
-    }
-
-    .identity-card.known {
-      border-color: rgba(34, 197, 94, 0.5);
-      background: rgba(34, 197, 94, 0.06);
-    }
-
-    .identity-card.unknown {
-      border-color: rgba(239, 68, 68, 0.5);
-      background: rgba(239, 68, 68, 0.06);
-    }
-
-    .identity-name {
-      font-size: 1.45rem;
-      font-weight: 800;
+    .person-big-name {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.85rem;
+      font-weight: 700;
       margin: 4px 0 6px;
-      word-break: break-word;
+      line-height: 1.15;
     }
 
-    .identity-sub {
-      font-size: 0.84rem;
+    .person-subtext {
+      font-size: 0.88rem;
       color: var(--muted);
       line-height: 1.4;
     }
 
-    .bars-list {
+    /* BARRAS DE SIMILITUD CON AVATARES */
+    .bars-container {
       display: flex;
       flex-direction: column;
-      gap: 11px;
+      gap: 12px;
     }
 
-    .bar-item {
+    .person-row {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .person-row.winner {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.14);
+      transform: translateX(4px);
+    }
+
+    .mini-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      flex-shrink: 0;
+    }
+
+    .bar-col {
+      flex: 1;
       display: flex;
       flex-direction: column;
       gap: 5px;
     }
 
-    .bar-header {
+    .bar-top {
       display: flex;
       justify-content: space-between;
-      font-size: 0.85rem;
-      font-weight: 600;
+      font-size: 0.88rem;
+      font-weight: 700;
     }
 
-    .bar-track {
-      width: 100%;
+    .bar-bg {
       height: 10px;
-      background: var(--bg);
+      background: rgba(0, 0, 0, 0.5);
       border-radius: 999px;
       overflow: hidden;
     }
@@ -260,28 +606,29 @@
     .bar-fill {
       height: 100%;
       width: 0%;
-      background: #3b82f6;
       border-radius: 999px;
-      transition: width 0.2s ease, background-color 0.2s ease;
+      background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .threshold-box {
-      border-top: 1px solid var(--border);
-      padding-top: 14px;
+    .bar-fill.winner {
+      background: linear-gradient(90deg, #10b981, #fde047);
+    }
+
+    .slider-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
-    .threshold-box input[type="range"] {
+    .slider-card input[type="range"] {
       width: 100%;
-      accent-color: var(--primary);
-    }
-
-    .threshold-help {
-      font-size: 0.76rem;
-      color: var(--muted);
-      line-height: 1.35;
+      accent-color: #ec4899;
+      cursor: pointer;
     }
 
     #inputArchivo {
@@ -290,68 +637,99 @@
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <h1>Reconocimiento Facial IA</h1>
-      <p>Perfiles entrenados: ANTHONY • CESIA • ELVIS • THOMAS</p>
-    </div>
-    <div id="badgeEstado" class="status-badge">⏳ Cargando redes neuronales...</div>
-  </header>
 
-  <main>
-    <!-- Panel Izquierdo: Cámara e Imagen -->
-    <section class="panel">
-      <div class="controls-bar">
-        <button id="btnCamara" class="btn" disabled>📹 Usar Cámara</button>
-        <button id="btnCambiarCam" class="btn secondary" style="display:none;">🔄 Girar Cámara</button>
-        <button id="btnSubir" class="btn secondary" disabled>📂 Subir / Tomar Foto</button>
-        <input type="file" id="inputArchivo" accept="image/*" />
-      </div>
+  <!-- FONDO 3D CON COLLAGE DE LAS FOTOS DE ENTRENAMIENTO -->
+  <div class="bg-3d-scene">
+    <div class="collage-plane" id="collagePlane"></div>
+  </div>
+  <div class="bg-vignette"></div>
 
-      <div class="viewport">
-        <video id="videoCamara" playsinline muted></video>
-        <canvas id="canvasSalida" style="display:none;"></canvas>
-        <div id="mensajeInicial" class="placeholder-msg">
-          Cargando modelo biométrico (YuNet + SFace)...<br />
-          En unos segundos podrás encender la cámara de tu celular o subir una foto.
+  <!-- CONTENIDO DE LA APLICACIÓN -->
+  <div class="app-wrapper">
+    <header class="hero-header">
+      <div class="title-group">
+        <div class="logo-3d">🙈</div>
+        <div class="title-text">
+          <h1>¿Onta Bebé? ✨</h1>
+          <p>El radar oficial de caritas: ANTHONY • CESIA • ELVIS • THOMAS</p>
         </div>
       </div>
-    </section>
+      <div id="badgeEstado" class="status-pill">⏳ Despertando neuronas...</div>
+    </header>
 
-    <!-- Panel Derecho: Resultados -->
-    <aside class="panel">
-      <div class="results-body">
-        <div class="section-label">Resultado del Análisis</div>
+    <div class="main-grid">
+      <!-- COLUMNA IZQUIERDA: CÁMARA, CARGA DE FOTO Y BOTÓN COMPROBAR -->
+      <section class="card-3d">
+        <div class="toolbar-3d">
+          <button id="btnCamara" class="btn-3d purple" disabled>📹 Usar Cámara</button>
+          <button id="btnCambiarCam" class="btn-3d cyan" style="display:none;">🔄 Girar Cámara</button>
+          <button id="btnSubir" class="btn-3d pink" disabled>📂 Subir / Tomar Foto</button>
+          <input type="file" id="inputArchivo" accept="image/*" />
+        </div>
 
-        <div id="cardResultado" class="identity-card">
-          <div class="section-label" style="font-size:0.7rem;">Persona Identificada</div>
-          <div id="lblIdentidad" class="identity-name">Esperando imagen...</div>
-          <div id="lblDetalle" class="identity-sub">
-            Activa la cámara o sube una fotografía para identificar el rostro.
+        <div class="stage-3d" id="stageVisor">
+          <div class="laser-scanner" id="laserScanner"></div>
+          <video id="videoCamara" playsinline muted></video>
+          <canvas id="canvasSalida"></canvas>
+
+          <div class="empty-stage" id="mensajeInicial">
+            <div class="big-emoji">👶🔍</div>
+            <h3>¿Dónde está el bebé?</h3>
+            <p>Sube una foto de tu galería o prende tu cámara y luego presiona el botón <strong>«¡Comprobar Imagen!»</strong>.</p>
           </div>
         </div>
 
-        <div class="section-label">Similitud por Persona</div>
-        <div class="bars-list" id="contenedorBarras">
-          <!-- Generado dinámicamente -->
+        <!-- BOTÓN PRINCIPAL SOLICITADO PARA COMPROBAR LA IMAGEN -->
+        <button id="btnComprobar" class="btn-comprobar-3d" disabled>
+          🔍 ¡Comprobar Imagen! (¿Onta Bebé?)
+        </button>
+      </section>
+
+      <!-- COLUMNA DERECHA: "¡AQUÍ TA!" RESULTADOS -->
+      <aside class="card-3d">
+        <div class="aquita-header">
+          <div class="aquita-title">🎉 ¡Aquí ta! 👀</div>
+          <span style="font-size:0.78rem; color:var(--muted); font-weight:600;">Radar Biométrico 3D</span>
         </div>
 
-        <div class="threshold-box">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span class="section-label">Umbral Desconocido</span>
-            <span id="lblUmbralValor" style="font-size:0.85rem; font-weight:700;">42.0%</span>
+        <div class="result-box-3d" id="cardResultado">
+          <img id="avatarResultado" class="avatar-preview" src="" alt="Avatar" />
+          <div class="aquita-badge" id="badgeAquita">ESPERANDO FOTO</div>
+          <div class="person-big-name" id="lblIdentidad">¿Onta Bebé? 🤔</div>
+          <div class="person-subtext" id="lblDetalle">
+            Carga una imagen o captura con tu cámara y toca <strong>«¡Comprobar Imagen!»</strong> para descubrir quién es.
+          </div>
+        </div>
+
+        <div style="font-family:'Fredoka',sans-serif; font-size:0.95rem; color:#e2e8f0;">
+          Comparación con el Escuadrón VIP:
+        </div>
+
+        <div class="bars-container" id="contenedorBarras"></div>
+
+        <div class="slider-card">
+          <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:700;">
+            <span>Nivel de exigencia (Umbral)</span>
+            <span id="lblUmbralValor" style="color:#f472b6;">42.0%</span>
           </div>
           <input type="range" id="sliderUmbral" min="32" max="65" step="0.5" value="42.0" />
-          <p class="threshold-help">
-            Si el rostro tiene una similitud menor a este porcentaje con las 4 personas registradas, se mostrará como <strong>ROSTRO DESCONOCIDO</strong>.
-          </p>
+          <span style="font-size:0.74rem; color:var(--muted);">
+            Si el parecido es menor a este porcentaje, diremos que <strong>¡No ta! (Rostro Desconocido)</strong>.
+          </span>
         </div>
-      </div>
-    </aside>
-  </main>
+      </aside>
+    </div>
+  </div>
 
   <script>
     const PERSONAS = ["ANTHONY", "CESIA", "ELVIS", "THOMAS"];
+    const AVATARES_PERSONAS = {
+      ANTHONY: "collage/ANTHONY_0.jpg",
+      CESIA: "collage/CESIA_0.jpg",
+      ELVIS: "collage/ELVIS_0.jpg",
+      THOMAS: "collage/THOMAS_0.jpg"
+    };
+
     const REF_PTS = [
       [38.2946, 51.6963],
       [73.5318, 51.5014],
@@ -366,44 +744,80 @@
     let umbralActual = 0.42;
 
     let streamCamara = null;
-    let modoCamara = "user"; // "user" (frontal) o "environment" (trasera)
+    let modoCamara = "user";
     let animacionActiva = false;
     let procesandoFrame = false;
     let ultimaImagenCanvas = null;
 
-    // Elementos DOM
+    // Referencias DOM
+    const collagePlane = document.getElementById("collagePlane");
     const badgeEstado = document.getElementById("badgeEstado");
     const btnCamara = document.getElementById("btnCamara");
     const btnCambiarCam = document.getElementById("btnCambiarCam");
     const btnSubir = document.getElementById("btnSubir");
+    const btnComprobar = document.getElementById("btnComprobar");
     const inputArchivo = document.getElementById("inputArchivo");
     const videoCamara = document.getElementById("videoCamara");
     const canvasSalida = document.getElementById("canvasSalida");
     const ctxSalida = canvasSalida.getContext("2d");
     const mensajeInicial = document.getElementById("mensajeInicial");
+    const laserScanner = document.getElementById("laserScanner");
     const cardResultado = document.getElementById("cardResultado");
+    const avatarResultado = document.getElementById("avatarResultado");
+    const badgeAquita = document.getElementById("badgeAquita");
     const lblIdentidad = document.getElementById("lblIdentidad");
     const lblDetalle = document.getElementById("lblDetalle");
     const sliderUmbral = document.getElementById("sliderUmbral");
     const lblUmbralValor = document.getElementById("lblUmbralValor");
     const contenedorBarras = document.getElementById("contenedorBarras");
 
-    // Crear barras de progreso
+    // 1. Construir el Collage 3D de Fondo con las fotos de entrenamiento
+    function construirCollageFondo() {
+      const listaFotos = [];
+      for (let i = 0; i < 8; i++) {
+        for (const p of PERSONAS) {
+          listaFotos.push({ src: `collage/${p}_${i}.jpg`, name: p });
+        }
+      }
+
+      for (let filaIdx = 0; filaIdx < 4; filaIdx++) {
+        const row = document.createElement("div");
+        row.className = "collage-row";
+        // Duplicar para scroll infinito fluido
+        const rotadas = listaFotos.slice(filaIdx * 6).concat(listaFotos.slice(0, filaIdx * 6));
+        const doble = rotadas.concat(rotadas);
+        doble.forEach(item => {
+          const card = document.createElement("div");
+          card.className = "polaroid-3d";
+          card.innerHTML = `<img src="${item.src}" loading="lazy" alt="${item.name}" /><span>${item.name}</span>`;
+          row.appendChild(card);
+        });
+        collagePlane.appendChild(row);
+      }
+    }
+    construirCollageFondo();
+
+    // 2. Construir filas de similitud con mini-avatares
     const refsBarras = {};
     PERSONAS.forEach(p => {
-      const item = document.createElement("div");
-      item.className = "bar-item";
-      item.innerHTML = `
-        <div class="bar-header">
-          <span>${p}</span>
-          <span id="pct_${p}">0.0%</span>
-        </div>
-        <div class="bar-track">
-          <div class="bar-fill" id="fill_${p}"></div>
+      const fila = document.createElement("div");
+      fila.className = "person-row";
+      fila.id = `row_${p}`;
+      fila.innerHTML = `
+        <img class="mini-avatar" src="${AVATARES_PERSONAS[p]}" alt="${p}" />
+        <div class="bar-col">
+          <div class="bar-top">
+            <span>${p}</span>
+            <span id="pct_${p}">0.0%</span>
+          </div>
+          <div class="bar-bg">
+            <div class="bar-fill" id="fill_${p}"></div>
+          </div>
         </div>
       `;
-      contenedorBarras.appendChild(item);
+      contenedorBarras.appendChild(fila);
       refsBarras[p] = {
+        row: fila,
         pct: document.getElementById(`pct_${p}`),
         fill: document.getElementById(`fill_${p}`)
       };
@@ -414,10 +828,11 @@
       umbralActual = val / 100.0;
       lblUmbralValor.textContent = `${val.toFixed(1)}%`;
       if (!animacionActiva && ultimaImagenCanvas) {
-        analizarYMostrarImagen(ultimaImagenCanvas);
+        ejecutarComprobacionImagen(ultimaImagenCanvas, false);
       }
     });
 
+    // 3. Inicializar Modelos ONNX
     async function inicializarModelos() {
       try {
         ort.env.wasm.numThreads = 1;
@@ -437,20 +852,18 @@
           lblUmbralValor.textContent = `${(umbralActual * 100).toFixed(1)}%`;
         }
 
-        badgeEstado.textContent = `✅ Modelo Activo (Precisión: ${(datosEmbeddings.accuracy_cv * 100).toFixed(1)}%)`;
+        badgeEstado.textContent = `✅ ¡Listo pa' buscar bebés! (${(datosEmbeddings.accuracy_cv * 100).toFixed(1)}% IA)`;
         badgeEstado.classList.add("ready");
-        mensajeInicial.innerHTML = "Selecciona <strong>📹 Usar Cámara</strong> para reconocimiento en vivo<br/>o <strong>📂 Subir / Tomar Foto</strong> para analizar una imagen.";
 
         btnCamara.disabled = false;
         btnSubir.disabled = false;
       } catch (err) {
         console.error(err);
-        badgeEstado.textContent = "❌ Error cargando modelos";
-        mensajeInicial.textContent = "Error al cargar los archivos del modelo: " + err.message;
+        badgeEstado.textContent = "❌ Error cargando IA";
       }
     }
 
-    // Decodificador YuNet (strides 8, 16, 32 + NMS)
+    // 4. Detección YuNet + Alineación SFace
     function iou(a, b) {
       const x1 = Math.max(a.x, b.x);
       const y1 = Math.max(a.y, b.y);
@@ -465,8 +878,6 @@
     async function detectarRostrosYuNet(sourceCanvas, scoreThresh = 0.55) {
       const origW = sourceCanvas.width;
       const origH = sourceCanvas.height;
-
-      // Redimensionar a múltiplo de 32 (máx 480px para velocidad en móviles)
       const maxDim = 480;
       const scale = Math.min(1.0, maxDim / Math.max(origW, origH));
       const wScaled = Math.round(origW * scale);
@@ -487,9 +898,9 @@
       const floatBGR = new Float32Array(3 * numPix);
 
       for (let i = 0; i < numPix; i++) {
-        floatBGR[i] = imgData[4 * i + 2];            // B
-        floatBGR[numPix + i] = imgData[4 * i + 1];   // G
-        floatBGR[2 * numPix + i] = imgData[4 * i];   // R
+        floatBGR[i] = imgData[4 * i + 2];
+        floatBGR[numPix + i] = imgData[4 * i + 1];
+        floatBGR[2 * numPix + i] = imgData[4 * i];
       }
 
       const inputName = sesionYuNet.inputNames[0];
@@ -514,7 +925,6 @@
 
           const r = Math.floor(idx / cols);
           const c = idx % cols;
-
           const dx = bbox[4 * idx];
           const dy = bbox[4 * idx + 1];
           const dw = bbox[4 * idx + 2];
@@ -559,14 +969,12 @@
       return seleccionados;
     }
 
-    // Alineación Umeyama de 5 puntos + extracción de embedding SFace (112x112 RGB)
     async function extraerEmbeddingSFace(sourceCanvas, kps) {
       const sCtx = sourceCanvas.getContext("2d");
       const sw = sourceCanvas.width;
       const sh = sourceCanvas.height;
       const srcData = sCtx.getImageData(0, 0, sw, sh).data;
 
-      // Media de puntos origen y destino
       let msX = 0, msY = 0, mdX = 0, mdY = 0;
       for (let i = 0; i < 5; i++) {
         msX += kps[i][0];
@@ -605,11 +1013,8 @@
           const ys = (-b * dx + a * dy) * invS;
 
           const dstIdx = yd * outSize + xd;
-          if (xs < 0 || xs >= sw - 1 || ys < 0 || ys >= sh - 1) {
-            continue;
-          }
+          if (xs < 0 || xs >= sw - 1 || ys < 0 || ys >= sh - 1) continue;
 
-          // Interpolación bilineal
           const x0 = Math.floor(xs);
           const y0 = Math.floor(ys);
           const wx = xs - x0;
@@ -625,8 +1030,9 @@
             const v10 = srcData[i10 + c];
             const v01 = srcData[i01 + c];
             const v11 = srcData[i11 + c];
-            const val = (1 - wy) * ((1 - wx) * v00 + wx * v10) + wy * ((1 - wx) * v01 + wx * v11);
-            floatRGB[c * numPix + dstIdx] = val;
+            floatRGB[c * numPix + dstIdx] =
+              (1 - wy) * ((1 - wx) * v00 + wx * v10) +
+              wy * ((1 - wx) * v01 + wx * v11);
           }
         }
       }
@@ -689,93 +1095,80 @@
       };
     }
 
-    function actualizarPanelDerecho(res) {
+    // 5. Mostrar Resultados con estilo "¡Aquí ta!"
+    function actualizarPanelAquita(res) {
       if (!res) {
-        cardResultado.className = "identity-card";
-        lblIdentidad.textContent = "SIN ROSTRO DETECTADO";
-        lblIdentidad.style.color = "#fbbf24";
-        lblDetalle.textContent = "Apunta la cámara hacia un rostro con buena iluminación.";
+        cardResultado.className = "result-box-3d";
+        avatarResultado.style.display = "none";
+        badgeAquita.textContent = "🙈 NO VEO A NADIE";
+        lblIdentidad.textContent = "¡No veo ninguna carita!";
+        lblIdentidad.style.color = "#fde047";
+        lblDetalle.textContent = "Asegúrate de que la cara se vea clarita y con buena luz.";
         PERSONAS.forEach(p => {
+          refsBarras[p].row.classList.remove("winner");
           refsBarras[p].pct.textContent = "0.0%";
           refsBarras[p].fill.style.width = "0%";
+          refsBarras[p].fill.classList.remove("winner");
         });
         return;
       }
 
       const pct = (res.similitud * 100).toFixed(1);
       if (res.esConocido) {
-        cardResultado.className = "identity-card known";
-        lblIdentidad.textContent = `✅ ${res.nombre}`;
+        cardResultado.className = "result-box-3d found";
+        avatarResultado.src = AVATARES_PERSONAS[res.nombre];
+        avatarResultado.style.display = "block";
+        badgeAquita.textContent = "🎉 ¡AQUÍ TA EL BEBÉ! 👀";
+        lblIdentidad.textContent = `¡Aquí ta ${res.nombre}! 😎🔥`;
         lblIdentidad.style.color = "#4ade80";
-        lblDetalle.textContent = `Rostro verificado con ${pct}% de similitud biométrica.`;
+        lblDetalle.textContent = `¡Lo encontramos! Tiene un ${pct}% de parecido con ${res.nombre}.`;
       } else {
-        cardResultado.className = "identity-card unknown";
-        lblIdentidad.textContent = "❌ ROSTRO DESCONOCIDO";
+        cardResultado.className = "result-box-3d unknown";
+        avatarResultado.style.display = "none";
+        badgeAquita.textContent = "🚨 ¡INTRUSO DETECTADO!";
+        lblIdentidad.textContent = "¡No ta! Rostro Desconocido 😱";
         lblIdentidad.style.color = "#f87171";
-        lblDetalle.textContent = `No pertenece a las 4 personas registradas (máx: ${res.mejorPersona} con ${pct}%, menor al umbral de ${(umbralActual * 100).toFixed(1)}%).`;
+        lblDetalle.textContent = `¡Ese bebé no es del grupo VIP! (Se parece solo un ${pct}% a ${res.mejorPersona}, debajo del ${(umbralActual * 100).toFixed(1)}%).`;
       }
 
       PERSONAS.forEach(p => {
         const sPct = (res.similitudes[p] * 100);
+        const esGanador = res.esConocido && p === res.nombre;
+        refsBarras[p].row.classList.toggle("winner", esGanador);
         refsBarras[p].pct.textContent = `${sPct.toFixed(1)}%`;
         refsBarras[p].fill.style.width = `${Math.min(100, sPct)}%`;
-        refsBarras[p].fill.style.backgroundColor = (res.esConocido && p === res.nombre) ? "#22c55e" : "#3b82f6";
+        refsBarras[p].fill.classList.toggle("winner", esGanador);
       });
     }
 
     function dibujarDetecciones(ctx, detecciones) {
       for (const det of detecciones) {
         const { cara, resultado } = det;
-        const color = resultado.esConocido ? "#22c55e" : "#ef4444";
+        const color = resultado.esConocido ? "#10b981" : "#ef4444";
 
         ctx.strokeStyle = color;
-        ctx.lineWidth = Math.max(3, Math.round(ctx.canvas.width / 180));
+        ctx.lineWidth = Math.max(4, Math.round(ctx.canvas.width / 150));
         ctx.strokeRect(cara.x, cara.y, cara.w, cara.h);
 
-        const etiqueta = `${resultado.nombre} (${(resultado.similitud * 100).toFixed(1)}%)`;
-        const fontSize = Math.max(14, Math.round(ctx.canvas.width / 34));
-        ctx.font = `bold ${fontSize}px sans-serif`;
-        const textWidth = ctx.measureText(etiqueta).width;
-        const boxH = fontSize + 12;
-        const boxY = Math.max(0, cara.y - boxH);
+        const texto = resultado.esConocido
+          ? `¡Aquí ta ${resultado.nombre}! (${(resultado.similitud * 100).toFixed(0)}%)`
+          : `Rostro Desconocido (${(resultado.similitud * 100).toFixed(0)}%)`;
+
+        const fontSize = Math.max(15, Math.round(ctx.canvas.width / 32));
+        ctx.font = `bold ${fontSize}px 'Fredoka', sans-serif`;
+        const tw = ctx.measureText(texto).width;
+        const bh = fontSize + 14;
+        const by = Math.max(0, cara.y - bh);
 
         ctx.fillStyle = color;
-        ctx.fillRect(cara.x, boxY, textWidth + 16, boxH);
+        ctx.fillRect(cara.x, by, tw + 18, bh);
 
         ctx.fillStyle = "#ffffff";
-        ctx.fillText(etiqueta, cara.x + 8, boxY + fontSize + 2);
+        ctx.fillText(texto, cara.x + 9, by + fontSize + 2);
       }
     }
 
-    // Modo Subir / Tomar Foto
-    async function analizarYMostrarImagen(imgCanvas) {
-      mensajeInicial.style.display = "none";
-      canvasSalida.style.display = "block";
-      canvasSalida.width = imgCanvas.width;
-      canvasSalida.height = imgCanvas.height;
-      ctxSalida.drawImage(imgCanvas, 0, 0);
-
-      const caras = await detectarRostrosYuNet(imgCanvas);
-      if (caras.length === 0) {
-        actualizarPanelDerecho(null);
-        return;
-      }
-
-      // Ordenar por tamaño
-      caras.sort((a, b) => (b.w * b.h) - (a.w * a.h));
-      const detecciones = [];
-
-      for (const cara of caras) {
-        const emb = await extraerEmbeddingSFace(imgCanvas, cara.kps);
-        const resultado = clasificarEmbedding(emb);
-        detecciones.push({ cara, resultado });
-      }
-
-      ctxSalida.drawImage(imgCanvas, 0, 0);
-      dibujarDetecciones(ctxSalida, detecciones);
-      actualizarPanelDerecho(detecciones[0].resultado);
-    }
-
+    // 6. Cargar foto y mostrar vista previa lista para el botón "¡Comprobar Imagen!"
     btnSubir.addEventListener("click", () => {
       inputArchivo.click();
     });
@@ -793,14 +1186,92 @@
         c.width = Math.round(img.width * scale);
         c.height = Math.round(img.height * scale);
         c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+
         ultimaImagenCanvas = c;
-        analizarYMostrarImagen(c);
+        mensajeInicial.style.display = "none";
+        canvasSalida.style.display = "block";
+        canvasSalida.width = c.width;
+        canvasSalida.height = c.height;
+        ctxSalida.drawImage(c, 0, 0);
+
+        // Habilitar y resaltar el botón "¡Comprobar Imagen!"
+        btnComprobar.disabled = false;
+        btnComprobar.innerHTML = "🔍 ¡Comprobar Imagen! (¿Onta Bebé?)";
+
+        cardResultado.className = "result-box-3d";
+        avatarResultado.style.display = "none";
+        badgeAquita.textContent = "📸 FOTO CARGADA";
+        lblIdentidad.textContent = "¡Foto lista! 👇";
+        lblIdentidad.style.color = "#38bdf8";
+        lblDetalle.textContent = "Presiona el botón grande «🔍 ¡Comprobar Imagen!» debajo de la foto para analizarla.";
       };
       img.src = URL.createObjectURL(file);
       inputArchivo.value = "";
     });
 
-    // Modo Cámara en Vivo
+    // Acción del botón "¡Comprobar Imagen!"
+    btnComprobar.addEventListener("click", async () => {
+      if (animacionActiva && videoCamara.readyState >= 2) {
+        // Si la cámara está encendida, congela el frame actual y lo comprueba
+        const vw = videoCamara.videoWidth;
+        const vh = videoCamara.videoHeight;
+        const c = document.createElement("canvas");
+        c.width = vw;
+        c.height = vh;
+        const sCtx = c.getContext("2d");
+        if (modoCamara === "user") {
+          sCtx.translate(vw, 0);
+          sCtx.scale(-1, 1);
+        }
+        sCtx.drawImage(videoCamara, 0, 0, vw, vh);
+        ultimaImagenCanvas = c;
+        detenerCamara();
+        canvasSalida.width = vw;
+        canvasSalida.height = vh;
+        ctxSalida.drawImage(c, 0, 0);
+      }
+
+      if (!ultimaImagenCanvas) return;
+      await ejecutarComprobacionImagen(ultimaImagenCanvas, true);
+    });
+
+    async function ejecutarComprobacionImagen(imgCanvas, conEfectoLaser = true) {
+      btnComprobar.disabled = true;
+      btnComprobar.innerHTML = "⏳ Buscando al bebé...";
+      if (conEfectoLaser) {
+        laserScanner.style.display = "block";
+        await new Promise(r => setTimeout(r, 450));
+      }
+
+      try {
+        ctxSalida.drawImage(imgCanvas, 0, 0);
+        const caras = await detectarRostrosYuNet(imgCanvas);
+
+        if (caras.length === 0) {
+          actualizarPanelAquita(null);
+          return;
+        }
+
+        caras.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+        const detecciones = [];
+
+        for (const cara of caras) {
+          const emb = await extraerEmbeddingSFace(imgCanvas, cara.kps);
+          const resultado = clasificarEmbedding(emb);
+          detecciones.push({ cara, resultado });
+        }
+
+        ctxSalida.drawImage(imgCanvas, 0, 0);
+        dibujarDetecciones(ctxSalida, detecciones);
+        actualizarPanelAquita(detecciones[0].resultado);
+      } finally {
+        laserScanner.style.display = "none";
+        btnComprobar.disabled = false;
+        btnComprobar.innerHTML = "🔍 ¡Volver a Comprobar Imagen!";
+      }
+    }
+
+    // 7. Modo Cámara en Vivo del Celular
     async function iniciarCamara() {
       try {
         if (streamCamara) detenerCamara();
@@ -818,14 +1289,17 @@
 
         mensajeInicial.style.display = "none";
         canvasSalida.style.display = "block";
-        btnCamara.textContent = "⏹ Detener Cámara";
-        btnCamara.classList.add("danger");
+        btnCamara.textContent = "⏹ Apagar Cámara";
+        btnCamara.classList.replace("purple", "danger");
         btnCambiarCam.style.display = "inline-flex";
+
+        btnComprobar.disabled = false;
+        btnComprobar.innerHTML = "📸 ¡Capturar y Comprobar! (¿Onta Bebé?)";
 
         animacionActiva = true;
         bucleVideo();
       } catch (err) {
-        alert("No se pudo acceder a la cámara: " + err.message);
+        alert("No se pudo abrir la cámara: " + err.message);
       }
     }
 
@@ -836,7 +1310,7 @@
         streamCamara = null;
       }
       btnCamara.textContent = "📹 Usar Cámara";
-      btnCamara.classList.remove("danger");
+      btnCamara.classList.replace("danger", "purple");
       btnCambiarCam.style.display = "none";
     }
 
@@ -865,7 +1339,6 @@
           canvasSalida.height = vh;
         }
 
-        // Dibujar frame actual (espejo si es cámara frontal)
         ctxSalida.save();
         if (modoCamara === "user") {
           ctxSalida.translate(vw, 0);
@@ -874,7 +1347,6 @@
         ctxSalida.drawImage(videoCamara, 0, 0, vw, vh);
         ctxSalida.restore();
 
-        // Dibujar última detección conocida sin parpadeo
         dibujarDetecciones(ctxSalida, ultimasDeteccionesVideo);
 
         if (!procesandoFrame) {
@@ -901,7 +1373,7 @@
               }
               ultimasDeteccionesVideo = nuevas;
               if (animacionActiva) {
-                actualizarPanelDerecho(nuevas.length > 0 ? nuevas[0].resultado : null);
+                actualizarPanelAquita(nuevas.length > 0 ? nuevas[0].resultado : null);
               }
             } catch (e) {
               console.error(e);
