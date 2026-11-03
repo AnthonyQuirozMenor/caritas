@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Reconocimiento Facial — ANTHONY | CESIA | ELVIS | THOMAS</title>
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.2/dist/ort.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .brand p {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      font-weight: 600;
+    }
+
+    .status-badge.ready {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    main {
+      flex: 1;
+      max-width: 1120px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 16px;
+    }
+
+    @media (max-width: 860px) {
+      main {
+        grid-template-columns: 1fr;
+        padding: 12px;
+      }
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .btn {
+      flex: 1;
+      min-width: 125px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: #fff;
+      background: var(--primary);
+      text-align: center;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn.secondary {
+      background: #334155;
+      color: #e2e8f0;
+    }
+
+    .btn.secondary:hover:not(:disabled) {
+      background: #475569;
+    }
+
+    .btn.danger {
+      background: #dc2626;
+    }
+
+    .viewport {
+      position: relative;
+      flex: 1;
+      min-height: 340px;
+      background: #090d16;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #videoCamara {
+      display: none;
+    }
+
+    #canvasSalida {
+      max-width: 100%;
+      max-height: 62vh;
+      width: auto;
+      height: auto;
+      display: block;
+    }
+
+    .placeholder-msg {
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .results-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+
+    .identity-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .identity-card.known {
+      border-color: rgba(34, 197, 94, 0.5);
+      background: rgba(34, 197, 94, 0.06);
+    }
+
+    .identity-card.unknown {
+      border-color: rgba(239, 68, 68, 0.5);
+      background: rgba(239, 68, 68, 0.06);
+    }
+
+    .identity-name {
+      font-size: 1.45rem;
+      font-weight: 800;
+      margin: 4px 0 6px;
+      word-break: break-word;
+    }
+
+    .identity-sub {
+      font-size: 0.84rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .bars-list {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .bar-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .bar-track {
+      width: 100%;
+      height: 10px;
+      background: var(--bg);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: #3b82f6;
+      border-radius: 999px;
+      transition: width 0.2s ease, background-color 0.2s ease;
+    }
+
+    .threshold-box {
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .threshold-box input[type="range"] {
+      width: 100%;
+      accent-color: var(--primary);
+    }
+
+    .threshold-help {
+      font-size: 0.76rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    #inputArchivo {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <h1>Reconocimiento Facial IA</h1>
+      <p>Perfiles entrenados: ANTHONY • CESIA • ELVIS • THOMAS</p>
+    </div>
+    <div id="badgeEstado" class="status-badge">⏳ Cargando redes neuronales...</div>
+  </header>
+
+  <main>
+    <!-- Panel Izquierdo: Cámara e Imagen -->
+    <section class="panel">
+      <div class="controls-bar">
+        <button id="btnCamara" class="btn" disabled>📹 Usar Cámara</button>
+        <button id="btnCambiarCam" class="btn secondary" style="display:none;">🔄 Girar Cámara</button>
+        <button id="btnSubir" class="btn secondary" disabled>📂 Subir / Tomar Foto</button>
+        <input type="file" id="inputArchivo" accept="image/*" />
+      </div>
+
+      <div class="viewport">
+        <video id="videoCamara" playsinline muted></video>
+        <canvas id="canvasSalida" style="display:none;"></canvas>
+        <div id="mensajeInicial" class="placeholder-msg">
+          Cargando modelo biométrico (YuNet + SFace)...<br />
+          En unos segundos podrás encender la cámara de tu celular o subir una foto.
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel Derecho: Resultados -->
+    <aside class="panel">
+      <div class="results-body">
+        <div class="section-label">Resultado del Análisis</div>
+
+        <div id="cardResultado" class="identity-card">
+          <div class="section-label" style="font-size:0.7rem;">Persona Identificada</div>
+          <div id="lblIdentidad" class="identity-name">Esperando imagen...</div>
+          <div id="lblDetalle" class="identity-sub">
+            Activa la cámara o sube una fotografía para identificar el rostro.
+          </div>
+        </div>
+
+        <div class="section-label">Similitud por Persona</div>
+        <div class="bars-list" id="contenedorBarras">
+          <!-- Generado dinámicamente -->
+        </div>
+
+        <div class="threshold-box">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="section-label">Umbral Desconocido</span>
+            <span id="lblUmbralValor" style="font-size:0.85rem; font-weight:700;">42.0%</span>
+          </div>
+          <input type="range" id="sliderUmbral" min="32" max="65" step="0.5" value="42.0" />
+          <p class="threshold-help">
+            Si el rostro tiene una similitud menor a este porcentaje con las 4 personas registradas, se mostrará como <strong>ROSTRO DESCONOCIDO</strong>.
+          </p>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const PERSONAS = ["ANTHONY", "CESIA", "ELVIS", "THOMAS"];
+    const REF_PTS = [
+      [38.2946, 51.6963],
+      [73.5318, 51.5014],
+      [56.0252, 71.7366],
+      [41.5493, 92.3655],
+      [70.7299, 92.2041]
+    ];
+
+    let sesionYuNet = null;
+    let sesionSFace = null;
+    let datosEmbeddings = null;
+    let umbralActual = 0.42;
+
+    let streamCamara = null;
+    let modoCamara = "user"; // "user" (frontal) o "environment" (trasera)
+    let animacionActiva = false;
+    let procesandoFrame = false;
+    let ultimaImagenCanvas = null;
+
+    // Elementos DOM
+    const badgeEstado = document.getElementById("badgeEstado");
+    const btnCamara = document.getElementById("btnCamara");
+    const btnCambiarCam = document.getElementById("btnCambiarCam");
+    const btnSubir = document.getElementById("btnSubir");
+    const inputArchivo = document.getElementById("inputArchivo");
+    const videoCamara = document.getElementById("videoCamara");
+    const canvasSalida = document.getElementById("canvasSalida");
+    const ctxSalida = canvasSalida.getContext("2d");
+    const mensajeInicial = document.getElementById("mensajeInicial");
+    const cardResultado = document.getElementById("cardResultado");
+    const lblIdentidad = document.getElementById("lblIdentidad");
+    const lblDetalle = document.getElementById("lblDetalle");
+    const sliderUmbral = document.getElementById("sliderUmbral");
+    const lblUmbralValor = document.getElementById("lblUmbralValor");
+    const contenedorBarras = document.getElementById("contenedorBarras");
+
+    // Crear barras de progreso
+    const refsBarras = {};
+    PERSONAS.forEach(p => {
+      const item = document.createElement("div");
+      item.className = "bar-item";
+      item.innerHTML = `
+        <div class="bar-header">
+          <span>${p}</span>
+          <span id="pct_${p}">0.0%</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" id="fill_${p}"></div>
+        </div>
+      `;
+      contenedorBarras.appendChild(item);
+      refsBarras[p] = {
+        pct: document.getElementById(`pct_${p}`),
+        fill: document.getElementById(`fill_${p}`)
+      };
+    });
+
+    sliderUmbral.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      umbralActual = val / 100.0;
+      lblUmbralValor.textContent = `${val.toFixed(1)}%`;
+      if (!animacionActiva && ultimaImagenCanvas) {
+        analizarYMostrarImagen(ultimaImagenCanvas);
+      }
+    });
+
+    async function inicializarModelos() {
+      try {
+        ort.env.wasm.numThreads = 1;
+        const [respEmb, yunet, sface] = await Promise.all([
+          fetch("modelos/embeddings_web.json").then(r => r.json()),
+          ort.InferenceSession.create("modelos/face_detection_yunet_2023mar.onnx", { executionProviders: ["wasm"] }),
+          ort.InferenceSession.create("modelos/face_recognition_sface_2021dec.onnx", { executionProviders: ["wasm"] })
+        ]);
+
+        datosEmbeddings = respEmb;
+        sesionYuNet = yunet;
+        sesionSFace = sface;
+
+        if (datosEmbeddings.umbral_desconocido) {
+          umbralActual = datosEmbeddings.umbral_desconocido;
+          sliderUmbral.value = (umbralActual * 100).toFixed(1);
+          lblUmbralValor.textContent = `${(umbralActual * 100).toFixed(1)}%`;
+        }
+
+        badgeEstado.textContent = `✅ Modelo Activo (Precisión: ${(datosEmbeddings.accuracy_cv * 100).toFixed(1)}%)`;
+        badgeEstado.classList.add("ready");
+        mensajeInicial.innerHTML = "Selecciona <strong>📹 Usar Cámara</strong> para reconocimiento en vivo<br/>o <strong>📂 Subir / Tomar Foto</strong> para analizar una imagen.";
+
+        btnCamara.disabled = false;
+        btnSubir.disabled = false;
+      } catch (err) {
+        console.error(err);
+        badgeEstado.textContent = "❌ Error cargando modelos";
+        mensajeInicial.textContent = "Error al cargar los archivos del modelo: " + err.message;
+      }
+    }
+
+    // Decodificador YuNet (strides 8, 16, 32 + NMS)
+    function iou(a, b) {
+      const x1 = Math.max(a.x, b.x);
+      const y1 = Math.max(a.y, b.y);
+      const x2 = Math.min(a.x + a.w, b.x + b.w);
+      const y2 = Math.min(a.y + a.h, b.y + b.h);
+      const w = Math.max(0, x2 - x1);
+      const h = Math.max(0, y2 - y1);
+      const inter = w * h;
+      return inter / (a.w * a.h + b.w * b.h - inter + 1e-6);
+    }
+
+    async function detectarRostrosYuNet(sourceCanvas, scoreThresh = 0.55) {
+      const origW = sourceCanvas.width;
+      const origH = sourceCanvas.height;
+
+      // Redimensionar a múltiplo de 32 (máx 480px para velocidad en móviles)
+      const maxDim = 480;
+      const scale = Math.min(1.0, maxDim / Math.max(origW, origH));
+      const wScaled = Math.round(origW * scale);
+      const hScaled = Math.round(origH * scale);
+      const wp = Math.ceil(wScaled / 32) * 32;
+      const hp = Math.ceil(hScaled / 32) * 32;
+
+      const tmpCanvas = document.createElement("canvas");
+      tmpCanvas.width = wp;
+      tmpCanvas.height = hp;
+      const tCtx = tmpCanvas.getContext("2d");
+      tCtx.fillStyle = "#000";
+      tCtx.fillRect(0, 0, wp, hp);
+      tCtx.drawImage(sourceCanvas, 0, 0, wScaled, hScaled);
+
+      const imgData = tCtx.getImageData(0, 0, wp, hp).data;
+      const numPix = wp * hp;
+      const floatBGR = new Float32Array(3 * numPix);
+
+      for (let i = 0; i < numPix; i++) {
+        floatBGR[i] = imgData[4 * i + 2];            // B
+        floatBGR[numPix + i] = imgData[4 * i + 1];   // G
+        floatBGR[2 * numPix + i] = imgData[4 * i];   // R
+      }
+
+      const inputName = sesionYuNet.inputNames[0];
+      const tensorIn = new ort.Tensor("float32", floatBGR, [1, 3, hp, wp]);
+      const outs = await sesionYuNet.run({ [inputName]: tensorIn });
+
+      const strides = [8, 16, 32];
+      const candidatos = [];
+
+      for (const s of strides) {
+        const cls = outs[`cls_${s}`].data;
+        const obj = outs[`obj_${s}`].data;
+        const bbox = outs[`bbox_${s}`].data;
+        const kps = outs[`kps_${s}`].data;
+        const cols = wp / s;
+        const rows = hp / s;
+        const total = cols * rows;
+
+        for (let idx = 0; idx < total; idx++) {
+          const sc = Math.sqrt(Math.max(0, cls[idx]) * Math.max(0, obj[idx]));
+          if (sc < scoreThresh) continue;
+
+          const r = Math.floor(idx / cols);
+          const c = idx % cols;
+
+          const dx = bbox[4 * idx];
+          const dy = bbox[4 * idx + 1];
+          const dw = bbox[4 * idx + 2];
+          const dh = bbox[4 * idx + 3];
+
+          const bw = Math.exp(dw) * s;
+          const bh = Math.exp(dh) * s;
+          const bx = (c + dx) * s - bw * 0.5;
+          const by = (r + dy) * s - bh * 0.5;
+
+          const landmarks = [];
+          for (let n = 0; n < 5; n++) {
+            const lx = ((c + kps[10 * idx + 2 * n]) * s) / scale;
+            const ly = ((r + kps[10 * idx + 2 * n + 1]) * s) / scale;
+            landmarks.push([lx, ly]);
+          }
+
+          candidatos.push({
+            x: bx / scale,
+            y: by / scale,
+            w: bw / scale,
+            h: bh / scale,
+            score: sc,
+            kps: landmarks
+          });
+        }
+      }
+
+      candidatos.sort((a, b) => b.score - a.score);
+      const seleccionados = [];
+      for (const cand of candidatos) {
+        let solapado = false;
+        for (const sel of seleccionados) {
+          if (iou(cand, sel) > 0.3) {
+            solapado = true;
+            break;
+          }
+        }
+        if (!solapado) seleccionados.push(cand);
+      }
+
+      return seleccionados;
+    }
+
+    // Alineación Umeyama de 5 puntos + extracción de embedding SFace (112x112 RGB)
+    async function extraerEmbeddingSFace(sourceCanvas, kps) {
+      const sCtx = sourceCanvas.getContext("2d");
+      const sw = sourceCanvas.width;
+      const sh = sourceCanvas.height;
+      const srcData = sCtx.getImageData(0, 0, sw, sh).data;
+
+      // Media de puntos origen y destino
+      let msX = 0, msY = 0, mdX = 0, mdY = 0;
+      for (let i = 0; i < 5; i++) {
+        msX += kps[i][0];
+        msY += kps[i][1];
+        mdX += REF_PTS[i][0];
+        mdY += REF_PTS[i][1];
+      }
+      msX /= 5; msY /= 5; mdX /= 5; mdY /= 5;
+
+      let D = 0, numA = 0, numB = 0;
+      for (let i = 0; i < 5; i++) {
+        const dsx = kps[i][0] - msX;
+        const dsy = kps[i][1] - msY;
+        const ddx = REF_PTS[i][0] - mdX;
+        const ddy = REF_PTS[i][1] - mdY;
+        D += dsx * dsx + dsy * dsy;
+        numA += dsx * ddx + dsy * ddy;
+        numB += dsx * ddy - dsy * ddx;
+      }
+
+      const a = numA / D;
+      const b = numB / D;
+      const tx = mdX - (a * msX - b * msY);
+      const ty = mdY - (b * msX + a * msY);
+      const invS = 1.0 / (a * a + b * b);
+
+      const outSize = 112;
+      const numPix = outSize * outSize;
+      const floatRGB = new Float32Array(3 * numPix);
+
+      for (let yd = 0; yd < outSize; yd++) {
+        for (let xd = 0; xd < outSize; xd++) {
+          const dx = xd - tx;
+          const dy = yd - ty;
+          const xs = (a * dx + b * dy) * invS;
+          const ys = (-b * dx + a * dy) * invS;
+
+          const dstIdx = yd * outSize + xd;
+          if (xs < 0 || xs >= sw - 1 || ys < 0 || ys >= sh - 1) {
+            continue;
+          }
+
+          // Interpolación bilineal
+          const x0 = Math.floor(xs);
+          const y0 = Math.floor(ys);
+          const wx = xs - x0;
+          const wy = ys - y0;
+
+          const i00 = 4 * (y0 * sw + x0);
+          const i10 = i00 + 4;
+          const i01 = 4 * ((y0 + 1) * sw + x0);
+          const i11 = i01 + 4;
+
+          for (let c = 0; c < 3; c++) {
+            const v00 = srcData[i00 + c];
+            const v10 = srcData[i10 + c];
+            const v01 = srcData[i01 + c];
+            const v11 = srcData[i11 + c];
+            const val = (1 - wy) * ((1 - wx) * v00 + wx * v10) + wy * ((1 - wx) * v01 + wx * v11);
+            floatRGB[c * numPix + dstIdx] = val;
+          }
+        }
+      }
+
+      const inputName = sesionSFace.inputNames[0];
+      const tensorIn = new ort.Tensor("float32", floatRGB, [1, 3, 112, 112]);
+      const outs = await sesionSFace.run({ [inputName]: tensorIn });
+      const rawFeat = outs[sesionSFace.outputNames[0]].data;
+
+      const emb = new Float32Array(128);
+      let norm = 0;
+      for (let i = 0; i < 128; i++) {
+        emb[i] = rawFeat[i];
+        norm += rawFeat[i] * rawFeat[i];
+      }
+      norm = Math.sqrt(norm) || 1.0;
+      for (let i = 0; i < 128; i++) emb[i] /= norm;
+      return emb;
+    }
+
+    function dot128(a, b) {
+      let s = 0;
+      for (let i = 0; i < 128; i++) s += a[i] * b[i];
+      return s;
+    }
+
+    function clasificarEmbedding(emb) {
+      const similitudes = {};
+      for (const persona of PERSONAS) {
+        const centroide = datosEmbeddings.centroides[persona];
+        const banco = datosEmbeddings.banco_por_persona[persona];
+
+        const simC = dot128(centroide, emb);
+        const sims = banco.map(vec => dot128(vec, emb));
+        sims.sort((a, b) => b - a);
+        const k = Math.min(5, sims.length);
+        let topK = 0;
+        for (let i = 0; i < k; i++) topK += sims[i];
+        topK /= k;
+
+        similitudes[persona] = Math.max(0, 0.5 * simC + 0.5 * topK);
+      }
+
+      let mejorPersona = PERSONAS[0];
+      let mejorPuntaje = -1;
+      for (const p of PERSONAS) {
+        if (similitudes[p] > mejorPuntaje) {
+          mejorPuntaje = similitudes[p];
+          mejorPersona = p;
+        }
+      }
+
+      const esConocido = mejorPuntaje >= umbralActual;
+      return {
+        nombre: esConocido ? mejorPersona : "ROSTRO DESCONOCIDO",
+        esConocido,
+        mejorPersona,
+        similitud: mejorPuntaje,
+        similitudes
+      };
+    }
+
+    function actualizarPanelDerecho(res) {
+      if (!res) {
+        cardResultado.className = "identity-card";
+        lblIdentidad.textContent = "SIN ROSTRO DETECTADO";
+        lblIdentidad.style.color = "#fbbf24";
+        lblDetalle.textContent = "Apunta la cámara hacia un rostro con buena iluminación.";
+        PERSONAS.forEach(p => {
+          refsBarras[p].pct.textContent = "0.0%";
+          refsBarras[p].fill.style.width = "0%";
+        });
+        return;
+      }
+
+      const pct = (res.similitud * 100).toFixed(1);
+      if (res.esConocido) {
+        cardResultado.className = "identity-card known";
+        lblIdentidad.textContent = `✅ ${res.nombre}`;
+        lblIdentidad.style.color = "#4ade80";
+        lblDetalle.textContent = `Rostro verificado con ${pct}% de similitud biométrica.`;
+      } else {
+        cardResultado.className = "identity-card unknown";
+        lblIdentidad.textContent = "❌ ROSTRO DESCONOCIDO";
+        lblIdentidad.style.color = "#f87171";
+        lblDetalle.textContent = `No pertenece a las 4 personas registradas (máx: ${res.mejorPersona} con ${pct}%, menor al umbral de ${(umbralActual * 100).toFixed(1)}%).`;
+      }
+
+      PERSONAS.forEach(p => {
+        const sPct = (res.similitudes[p] * 100);
+        refsBarras[p].pct.textContent = `${sPct.toFixed(1)}%`;
+        refsBarras[p].fill.style.width = `${Math.min(100, sPct)}%`;
+        refsBarras[p].fill.style.backgroundColor = (res.esConocido && p === res.nombre) ? "#22c55e" : "#3b82f6";
+      });
+    }
+
+    function dibujarDetecciones(ctx, detecciones) {
+      for (const det of detecciones) {
+        const { cara, resultado } = det;
+        const color = resultado.esConocido ? "#22c55e" : "#ef4444";
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(3, Math.round(ctx.canvas.width / 180));
+        ctx.strokeRect(cara.x, cara.y, cara.w, cara.h);
+
+        const etiqueta = `${resultado.nombre} (${(resultado.similitud * 100).toFixed(1)}%)`;
+        const fontSize = Math.max(14, Math.round(ctx.canvas.width / 34));
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        const textWidth = ctx.measureText(etiqueta).width;
+        const boxH = fontSize + 12;
+        const boxY = Math.max(0, cara.y - boxH);
+
+        ctx.fillStyle = color;
+        ctx.fillRect(cara.x, boxY, textWidth + 16, boxH);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(etiqueta, cara.x + 8, boxY + fontSize + 2);
+      }
+    }
+
+    // Modo Subir / Tomar Foto
+    async function analizarYMostrarImagen(imgCanvas) {
+      mensajeInicial.style.display = "none";
+      canvasSalida.style.display = "block";
+      canvasSalida.width = imgCanvas.width;
+      canvasSalida.height = imgCanvas.height;
+      ctxSalida.drawImage(imgCanvas, 0, 0);
+
+      const caras = await detectarRostrosYuNet(imgCanvas);
+      if (caras.length === 0) {
+        actualizarPanelDerecho(null);
+        return;
+      }
+
+      // Ordenar por tamaño
+      caras.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+      const detecciones = [];
+
+      for (const cara of caras) {
+        const emb = await extraerEmbeddingSFace(imgCanvas, cara.kps);
+        const resultado = clasificarEmbedding(emb);
+        detecciones.push({ cara, resultado });
+      }
+
+      ctxSalida.drawImage(imgCanvas, 0, 0);
+      dibujarDetecciones(ctxSalida, detecciones);
+      actualizarPanelDerecho(detecciones[0].resultado);
+    }
+
+    btnSubir.addEventListener("click", () => {
+      inputArchivo.click();
+    });
+
+    inputArchivo.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      detenerCamara();
+
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 960;
+        const scale = Math.min(1.0, maxDim / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        ultimaImagenCanvas = c;
+        analizarYMostrarImagen(c);
+      };
+      img.src = URL.createObjectURL(file);
+      inputArchivo.value = "";
+    });
+
+    // Modo Cámara en Vivo
+    async function iniciarCamara() {
+      try {
+        if (streamCamara) detenerCamara();
+        streamCamara = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: modoCamara,
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+          },
+          audio: false
+        });
+
+        videoCamara.srcObject = streamCamara;
+        await videoCamara.play();
+
+        mensajeInicial.style.display = "none";
+        canvasSalida.style.display = "block";
+        btnCamara.textContent = "⏹ Detener Cámara";
+        btnCamara.classList.add("danger");
+        btnCambiarCam.style.display = "inline-flex";
+
+        animacionActiva = true;
+        bucleVideo();
+      } catch (err) {
+        alert("No se pudo acceder a la cámara: " + err.message);
+      }
+    }
+
+    function detenerCamara() {
+      animacionActiva = false;
+      if (streamCamara) {
+        streamCamara.getTracks().forEach(t => t.stop());
+        streamCamara = null;
+      }
+      btnCamara.textContent = "📹 Usar Cámara";
+      btnCamara.classList.remove("danger");
+      btnCambiarCam.style.display = "none";
+    }
+
+    btnCamara.addEventListener("click", () => {
+      if (animacionActiva) {
+        detenerCamara();
+      } else {
+        iniciarCamara();
+      }
+    });
+
+    btnCambiarCam.addEventListener("click", () => {
+      modoCamara = (modoCamara === "user") ? "environment" : "user";
+      iniciarCamara();
+    });
+
+    let ultimasDeteccionesVideo = [];
+    async function bucleVideo() {
+      if (!animacionActiva) return;
+
+      if (videoCamara.readyState >= 2) {
+        const vw = videoCamara.videoWidth;
+        const vh = videoCamara.videoHeight;
+        if (canvasSalida.width !== vw || canvasSalida.height !== vh) {
+          canvasSalida.width = vw;
+          canvasSalida.height = vh;
+        }
+
+        // Dibujar frame actual (espejo si es cámara frontal)
+        ctxSalida.save();
+        if (modoCamara === "user") {
+          ctxSalida.translate(vw, 0);
+          ctxSalida.scale(-1, 1);
+        }
+        ctxSalida.drawImage(videoCamara, 0, 0, vw, vh);
+        ctxSalida.restore();
+
+        // Dibujar última detección conocida sin parpadeo
+        dibujarDetecciones(ctxSalida, ultimasDeteccionesVideo);
+
+        if (!procesandoFrame) {
+          procesandoFrame = true;
+          const snap = document.createElement("canvas");
+          snap.width = vw;
+          snap.height = vh;
+          const sCtx = snap.getContext("2d");
+          if (modoCamara === "user") {
+            sCtx.translate(vw, 0);
+            sCtx.scale(-1, 1);
+          }
+          sCtx.drawImage(videoCamara, 0, 0, vw, vh);
+
+          (async () => {
+            try {
+              const caras = await detectarRostrosYuNet(snap);
+              caras.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+              const nuevas = [];
+              for (const cara of caras.slice(0, 2)) {
+                const emb = await extraerEmbeddingSFace(snap, cara.kps);
+                const resultado = clasificarEmbedding(emb);
+                nuevas.push({ cara, resultado });
+              }
+              ultimasDeteccionesVideo = nuevas;
+              if (animacionActiva) {
+                actualizarPanelDerecho(nuevas.length > 0 ? nuevas[0].resultado : null);
+              }
+            } catch (e) {
+              console.error(e);
+            } finally {
+              procesandoFrame = false;
+            }
+          })();
+        }
+      }
+
+      requestAnimationFrame(bucleVideo);
+    }
+
+    inicializarModelos();
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Entorno virtual y herramientas locales
+.venv/
+.python/
+.tools/
+uv.zip
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.uv_cache/
+
