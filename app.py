@@ -1,3 +1,23 @@
+"""
+================================================================================
+ARCHIVO DE INTERFAZ GRÁFICA PRINCIPAL: app.py
+================================================================================
+OBJETIVO DEL ARCHIVO:
+Este es el archivo ejecutable principal de la aplicación de escritorio en Python.
+Conecta la interfaz gráfica (Tkinter) con el motor de Inteligencia Artificial
+definido en 'reconocimiento.py'.
+
+FUNCIONES PRINCIPALES:
+  1. Carga en segundo plano el modelo entrenado ('modelo_rostros.pkl') al abrir la ventana.
+  2. Permite al usuario subir cualquier imagen desde su PC ('📂 Subir Imagen para Reconocer').
+  3. Muestra la foto con el recuadro dibujado sobre el rostro (verde o rojo).
+  4. Muestra el nombre de la persona identificada (ANTHONY, CESIA, ELVIS, THOMAS)
+     o indica "❌ ROSTRO DESCONOCIDO" si se sube la foto de una 5ta persona.
+  5. Grafica las barras de porcentaje de similitud con las 4 personas y permite
+     ajustar en vivo el umbral de exigencia.
+================================================================================
+"""
+
 import os
 import threading
 import tkinter as tk
@@ -5,6 +25,7 @@ from tkinter import filedialog, messagebox, ttk
 import cv2
 from PIL import Image, ImageTk
 
+# Importamos las funciones de entrenamiento y predicción desde nuestro motor de IA
 from reconocimiento import (
     analizar_imagen,
     cargar_o_entrenar_modelo,
@@ -13,6 +34,8 @@ from reconocimiento import (
 
 
 class AplicacionReconocimientoFacial:
+    """Clase principal que construye y controla la ventana del sistema de reconocimiento."""
+
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("Reconocimiento Facial — ANTHONY | CESIA | ELVIS | THOMAS")
@@ -20,15 +43,22 @@ class AplicacionReconocimientoFacial:
         self.root.minsize(920, 640)
         self.root.configure(bg="#0f172a")
 
-        self.modelo_datos = None
-        self.ruta_imagen_actual = None
-        self.img_tk_actual = None
+        # Variables de estado de la aplicación
+        self.modelo_datos = None        # Guardará el modelo entrenado en memoria
+        self.ruta_imagen_actual = None  # Ruta de la última foto subida por el usuario
+        self.img_tk_actual = None       # Referencia de imagen para mostrarla en Tkinter
 
+        # 1. Construir todos los botones, paneles y barras de la ventana
         self._construir_interfaz()
+
+        # 2. Cargar el modelo entrenado apenas se abre la ventana (sin congelar la pantalla)
         self.root.after(150, self._cargar_modelo_inicial)
 
+    # ==========================================================================
+    # DISEÑO DE LA VENTANA (ENCABEZADO, VISOR DE FOTO Y PANEL DE RESULTADOS)
+    # ==========================================================================
     def _construir_interfaz(self):
-        # Encabezado
+        # --- ENCABEZADO SUPERIOR ---
         header = tk.Frame(self.root, bg="#1e293b", height=74)
         header.pack(fill=tk.X, side=tk.TOP)
         header.pack_propagate(False)
@@ -53,7 +83,7 @@ class AplicacionReconocimientoFacial:
         )
         self.lbl_estado_modelo.pack(anchor="w")
 
-        # Botones de acción en el encabezado
+        # --- BOTONES DE ACCIÓN (SUBIR IMAGEN Y RE-ENTRENAR) ---
         botones_box = tk.Frame(header, bg="#1e293b")
         botones_box.pack(side=tk.RIGHT, padx=24, pady=14)
 
@@ -89,11 +119,11 @@ class AplicacionReconocimientoFacial:
         )
         self.btn_reentrenar.pack(side=tk.LEFT)
 
-        # Contenedor principal dividido en 2 paneles
+        # --- CONTENEDOR CENTRAL DIVIDIDO EN 2 COLUMNAS ---
         main_frame = tk.Frame(self.root, bg="#0f172a")
         main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
-        # Panel izquierdo: Visor de Imagen
+        # Columna Izquierda: Visor donde se muestra la fotografía analizada
         panel_izq = tk.Frame(
             main_frame,
             bg="#1e293b",
@@ -112,7 +142,7 @@ class AplicacionReconocimientoFacial:
         )
         self.lbl_imagen.pack(fill=tk.BOTH, expand=True, padx=16, pady=16)
 
-        # Panel derecho: Resultados del Reconocimiento
+        # Columna Derecha: Panel de resultados y barras de similitud por persona
         panel_der = tk.Frame(
             main_frame,
             bg="#1e293b",
@@ -131,7 +161,7 @@ class AplicacionReconocimientoFacial:
             bg="#1e293b",
         ).pack(anchor="w", padx=20, pady=(20, 8))
 
-        # Tarjeta de identidad detectada
+        # Tarjeta donde aparece el nombre de la persona o "ROSTRO DESCONOCIDO"
         self.card_resultado = tk.Frame(panel_der, bg="#0f172a", padx=16, pady=18)
         self.card_resultado.pack(fill=tk.X, padx=20, pady=(0, 16))
 
@@ -166,7 +196,7 @@ class AplicacionReconocimientoFacial:
         )
         self.lbl_confianza_detalle.pack(anchor="w")
 
-        # Barras de similitud por persona
+        # --- BARRAS COMPARATIVAS PARA ANTHONY, CESIA, ELVIS Y THOMAS ---
         tk.Label(
             panel_der,
             text="SIMILITUD CON CADA PERSONA REGISTRADA",
@@ -224,7 +254,7 @@ class AplicacionReconocimientoFacial:
             pb.pack(fill=tk.X, pady=(4, 0))
             self.barras_personas[persona] = (pb, lbl_pct)
 
-        # Control de umbral para desconocido
+        # --- CONTROL DESLIZANTE (SLIDER) DEL UMBRAL DE ROSTRO DESCONOCIDO ---
         separador = tk.Frame(panel_der, bg="#334155", height=1)
         separador.pack(fill=tk.X, padx=20, pady=16)
 
@@ -236,10 +266,10 @@ class AplicacionReconocimientoFacial:
             bg="#1e293b",
         ).pack(anchor="w", padx=20)
 
-        self.var_umbral = tk.DoubleVar(value=48.0)
+        self.var_umbral = tk.DoubleVar(value=42.0)
         self.lbl_umbral_info = tk.Label(
             panel_der,
-            text="Similitud mínima requerida: 48.0%",
+            text="Similitud mínima requerida: 42.0%",
             font=("Segoe UI", 9),
             fg="#cbd5e1",
             bg="#1e293b",
@@ -273,13 +303,18 @@ class AplicacionReconocimientoFacial:
             justify=tk.LEFT,
         ).pack(anchor="w", padx=20, pady=(4, 0))
 
+    # ==========================================================================
+    # LÓGICA DE EVENTOS: CARGA DEL MODELO, SUBIDA DE IMAGEN Y RESULTADOS
+    # ==========================================================================
     def _al_cambiar_umbral(self, valor):
+        """Se ejecuta al mover la barra de umbral; recalcula en vivo si hay una foto cargada."""
         v = float(valor)
         self.lbl_umbral_info.configure(text=f"Similitud mínima requerida: {v:.1f}%")
         if self.ruta_imagen_actual and self.modelo_datos:
             self._ejecutar_analisis(self.ruta_imagen_actual)
 
     def _cargar_modelo_inicial(self):
+        """Carga el modelo entrenado en un hilo secundario para mantener fluida la ventana."""
         def tarea():
             try:
                 datos = cargar_o_entrenar_modelo(
@@ -301,6 +336,7 @@ class AplicacionReconocimientoFacial:
         threading.Thread(target=tarea, daemon=True).start()
 
     def _actualizar_info_modelo(self):
+        """Actualiza el indicador superior con la cantidad de fotos y la precisión del modelo."""
         if not self.modelo_datos:
             return
         est = self.modelo_datos["estadisticas"]
@@ -315,6 +351,7 @@ class AplicacionReconocimientoFacial:
         )
 
     def reentrenar_modelo_async(self):
+        """Vuelve a analizar las 4 carpetas de fotos si se agregaron nuevas imágenes."""
         self.btn_reentrenar.configure(state=tk.DISABLED)
         self.btn_subir.configure(state=tk.DISABLED)
 
@@ -347,6 +384,7 @@ class AplicacionReconocimientoFacial:
         threading.Thread(target=tarea, daemon=True).start()
 
     def seleccionar_imagen(self):
+        """Abre el explorador de archivos de Windows para elegir la foto a reconocer."""
         if not self.modelo_datos:
             messagebox.showinfo("Espera un momento", "El modelo aún se está cargando.")
             return
@@ -365,10 +403,14 @@ class AplicacionReconocimientoFacial:
         self._ejecutar_analisis(ruta)
 
     def _ejecutar_analisis(self, ruta_imagen: str):
+        """
+        Envía la foto seleccionada a 'analizar_imagen()' (en reconocimiento.py)
+        y actualiza la pantalla con el recuadro y los porcentajes de similitud.
+        """
         umbral_actual = float(self.var_umbral.get()) / 100.0
         res = analizar_imagen(ruta_imagen, self.modelo_datos, umbral_personalizado=umbral_actual)
 
-        # Mostrar imagen en el visor izquierdo
+        # Convertir la imagen anotada de BGR (OpenCV) a RGB (Pillow/Tkinter) para mostrarla
         img_bgr = res["imagen_bgr"]
         img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
         img_pil = Image.fromarray(img_rgb)
@@ -380,6 +422,7 @@ class AplicacionReconocimientoFacial:
         self.img_tk_actual = ImageTk.PhotoImage(img_pil)
         self.lbl_imagen.configure(image=self.img_tk_actual, text="")
 
+        # Si no se detectó ningún rostro en la imagen subida
         if not res["exito"] or len(res["resultados_rostros"]) == 0:
             self.lbl_identidad_valor.configure(text="SIN ROSTRO DETECTADO", fg="#fbbf24")
             self.lbl_confianza_detalle.configure(
@@ -390,12 +433,14 @@ class AplicacionReconocimientoFacial:
                 lbl_pct.configure(text="0.0%")
             return
 
+        # Tomar el resultado del rostro principal detectado
         principal = res["resultados_rostros"][0]
         nombre = principal["nombre"]
         es_conocido = principal["es_conocido"]
         similitud_pct = principal["similitud"] * 100.0
         mejor_candidato = principal["mejor_candidato"]
 
+        # Mostrar en verde si es una de las 4 personas, o en rojo si es ROSTRO DESCONOCIDO
         if es_conocido:
             self.lbl_identidad_valor.configure(text=f"✅ {nombre}", fg="#4ade80")
             self.lbl_confianza_detalle.configure(
@@ -411,6 +456,7 @@ class AplicacionReconocimientoFacial:
                 )
             )
 
+        # Actualizar las 4 barras de progreso con el porcentaje de parecido de cada persona
         for persona, (pb, lbl_pct) in self.barras_personas.items():
             sim_p = principal["similitudes_por_persona"].get(persona, 0.0) * 100.0
             pb["value"] = min(100.0, max(0.0, sim_p))
@@ -420,8 +466,8 @@ class AplicacionReconocimientoFacial:
             )
 
 
+# Punto de entrada al ejecutar: python app.py
 if __name__ == "__main__":
     root = tk.Tk()
     app = AplicacionReconocimientoFacial(root)
     root.mainloop()
-

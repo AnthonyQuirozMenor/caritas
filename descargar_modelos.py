@@ -1,3 +1,14 @@
+"""
+================================================================================
+MÓDULO AUXILIAR DE DESCARGA DE MODELOS ONNX: descargar_modelos.py
+================================================================================
+Verifica que los dos modelos pre-entrenados de Deep Learning de OpenCV Zoo
+estén descargados en la carpeta 'modelos/':
+  1. face_detection_yunet_2023mar.onnx  -> Detector de rostros y 5 puntos clave.
+  2. face_recognition_sface_2021dec.onnx -> Extractor biométrico de 128 dimensiones.
+================================================================================
+"""
+
 import os
 import urllib.request
 
@@ -16,6 +27,7 @@ URLS = {
 
 
 def asegurar_modelos() -> tuple[str, str]:
+    """Garantiza que ambos archivos .onnx existan en disco y devuelve sus rutas."""
     os.makedirs(MODELOS_DIR, exist_ok=True)
     rutas = []
     for nombre, url in URLS.items():
@@ -30,4 +42,3 @@ def asegurar_modelos() -> tuple[str, str]:
 
 if __name__ == "__main__":
     asegurar_modelos()
-

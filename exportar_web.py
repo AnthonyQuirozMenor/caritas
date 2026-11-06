@@ -1,7 +1,17 @@
+"""
+================================================================================
+EXPORTADOR DEL MODELO ENTRENADO A LA WEB: exportar_web.py
+================================================================================
+Toma el modelo entrenado en Python ('modelos/modelo_rostros.pkl') y exporta
+los centroides y vectores de 128 dimensiones de ANTHONY, CESIA, ELVIS y THOMAS
+a un archivo ligero JSON ('modelos/embeddings_web.json') para que la versión
+web de GitHub Pages ('index.html') pueda reconocer rostros desde el celular.
+================================================================================
+"""
+
 import json
 import os
 import pickle
-import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODELO_PKL = os.path.join(BASE_DIR, "modelos", "modelo_rostros.pkl")
@@ -9,6 +19,7 @@ JSON_OUT = os.path.join(BASE_DIR, "modelos", "embeddings_web.json")
 
 
 def exportar():
+    """Convierte los vectores biométricos de NumPy (.pkl) a formato JSON para el navegador."""
     with open(MODELO_PKL, "rb") as f:
         datos = pickle.load(f)
 
